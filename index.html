@@ -1,0 +1,845 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Визуализатор физических явлений</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+    }
+
+    body {
+      font-family: 'Inter', 'Segoe UI', Roboto, Arial, sans-serif;
+      background: #f5f7fb;
+      color: #1e1e2f;
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.2s, color 0.2s;
+    }
+
+    /* Тёмная тема */
+    body.dark {
+      background: radial-gradient(circle at top, #0f0f25, #000015);
+      color: #e6eef8;
+    }
+
+    .app {
+      display: grid;
+      grid-template-columns: 340px 1fr;
+      gap: 16px;
+      width: 100%;
+      height: 100%;
+      padding: 18px;
+    }
+
+    /* Боковая панель */
+    .sidebar {
+      background: rgba(255, 255, 255, 0.75);
+      backdrop-filter: blur(8px);
+      border-radius: 18px;
+      padding: 20px 16px;
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.05), 0 0 0 1px rgba(0, 0, 0, 0.02);
+      display: flex;
+      flex-direction: column;
+      transition: background 0.2s, box-shadow 0.2s;
+    }
+
+    body.dark .sidebar {
+      background: rgba(15, 15, 35, 0.7);
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(143, 91, 255, 0.2);
+    }
+
+    .brand {
+      font-weight: 600;
+      font-size: 20px;
+      margin-bottom: 20px;
+      color: #4f46e5;
+      letter-spacing: -0.3px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    body.dark .brand {
+      color: #b88bff;
+      text-shadow: 0 0 12px rgba(143, 91, 255, 0.3);
+    }
+
+    .modules {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-bottom: 20px;
+    }
+
+    .module-btn {
+      background: transparent;
+      border: 1px solid rgba(0, 0, 0, 0.05);
+      color: #2d3a4a;
+      padding: 12px 14px;
+      border-radius: 14px;
+      font-size: 15px;
+      font-weight: 500;
+      text-align: left;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    body.dark .module-btn {
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      color: #a3a3c2;
+    }
+
+    .module-btn:hover {
+      background: rgba(79, 70, 229, 0.06);
+      border-color: rgba(79, 70, 229, 0.2);
+    }
+
+    .module-btn.active {
+      background: #e0e7ff;
+      border-color: #4f46e5;
+      color: #1e1b4b;
+      box-shadow: 0 2px 8px rgba(79, 70, 229, 0.1);
+    }
+
+    body.dark .module-btn.active {
+      background: linear-gradient(90deg, rgba(143, 91, 255, 0.18), rgba(143, 91, 255, 0.06));
+      border-color: #8f5bff;
+      color: #f0eaff;
+      box-shadow: 0 4px 10px rgba(143, 91, 255, 0.2);
+    }
+
+    .controls {
+      flex: 1;
+      overflow-y: auto;
+      padding-right: 4px;
+    }
+
+    .control-card {
+      background: rgba(255, 255, 255, 0.4);
+      border-radius: 16px;
+      padding: 14px 12px;
+      margin-bottom: 16px;
+      border: 1px solid rgba(0, 0, 0, 0.03);
+    }
+
+    body.dark .control-card {
+      background: rgba(10, 10, 30, 0.5);
+      border: 1px solid rgba(255, 255, 255, 0.03);
+    }
+
+    .control-row {
+      margin-bottom: 18px;
+    }
+
+    .control-label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 13px;
+      color: #475569;
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+      font-weight: 500;
+    }
+
+    body.dark .control-label {
+      color: #b0b0d0;
+    }
+
+    .control-flex {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    input[type="range"] {
+      flex: 1;
+      height: 5px;
+      background: #cbd5e1;
+      border-radius: 10px;
+      -webkit-appearance: none;
+      appearance: none;
+    }
+
+    body.dark input[type="range"] {
+      background: #2a2a50;
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 18px;
+      height: 18px;
+      background: #4f46e5;
+      border-radius: 50%;
+      box-shadow: 0 2px 8px rgba(79, 70, 229, 0.3);
+      border: 2px solid white;
+      cursor: grab;
+    }
+
+    body.dark input[type="range"]::-webkit-slider-thumb {
+      background: #b88bff;
+      box-shadow: 0 0 12px #8f5bff;
+    }
+
+    .value-badge {
+      min-width: 70px;
+      background: #ffffff;
+      padding: 6px 8px;
+      border-radius: 24px;
+      text-align: center;
+      font-weight: 600;
+      color: #1e293b;
+      border: 1px solid #e2e8f0;
+      font-size: 14px;
+    }
+
+    body.dark .value-badge {
+      background: #1a1a3a;
+      border: 1px solid #3a3a6a;
+      color: #d9d9ff;
+    }
+
+    .formula-panel {
+      margin-top: 10px;
+      background: #ffffffd0;
+      border-radius: 14px;
+      padding: 12px 14px;
+      font-family: 'JetBrains Mono', 'SF Mono', monospace;
+      font-size: 14px;
+      border-left: 4px solid #4f46e5;
+      color: #0f172a;
+      backdrop-filter: blur(4px);
+    }
+
+    body.dark .formula-panel {
+      background: #0c0c1e;
+      border-left-color: #8f5bff;
+      color: #cfcfff;
+    }
+
+    /* Основная область */
+    .main {
+      background: rgba(255, 255, 255, 0.7);
+      backdrop-filter: blur(8px);
+      border-radius: 18px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.05);
+      border: 1px solid rgba(0, 0, 0, 0.03);
+    }
+
+    body.dark .main {
+      background: rgba(10, 10, 28, 0.6);
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
+      border: 1px solid rgba(143, 91, 255, 0.15);
+    }
+
+    .toolbar {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 12px;
+      align-items: center;
+    }
+
+    button {
+      background: #ffffff;
+      border: 1px solid #d1d5db;
+      color: #1f2937;
+      padding: 8px 14px;
+      border-radius: 30px;
+      font-weight: 500;
+      font-size: 13px;
+      cursor: pointer;
+      transition: 0.1s;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    body.dark button {
+      background: #1e1e40;
+      border: 1px solid #3a3a6a;
+      color: #e0e0ff;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+    }
+
+    button:hover {
+      background: #f3f4f6;
+      border-color: #9ca3af;
+    }
+
+    body.dark button:hover {
+      background: #2d2d60;
+      border-color: #8f5bff;
+    }
+
+    button.primary {
+      background: #4f46e5;
+      border: none;
+      color: white;
+      font-weight: 600;
+      box-shadow: 0 4px 10px rgba(79, 70, 229, 0.25);
+    }
+
+    body.dark button.primary {
+      background: linear-gradient(145deg, #8f5bff, #a06eff);
+      color: #011322;
+      box-shadow: 0 0 15px #8f5bff80;
+    }
+
+    button.primary:hover {
+      background: #4338ca;
+    }
+
+    .theme-toggle {
+      margin-left: auto;
+      background: transparent;
+      border: 1px solid #d1d5db;
+      width: 38px;
+      height: 38px;
+      border-radius: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+      font-size: 18px;
+    }
+
+    body.dark .theme-toggle {
+      border-color: #4a4a7a;
+    }
+
+    .fps-badge {
+      background: #f1f5f9;
+      padding: 6px 14px;
+      border-radius: 40px;
+      font-size: 13px;
+      border: 1px solid #cbd5e1;
+      color: #334155;
+    }
+
+    body.dark .fps-badge {
+      background: #1a1a3a;
+      border: 1px solid #4a4a7a;
+      color: #c0c0ff;
+    }
+
+    .canvas-wrap {
+      flex: 1;
+      background: #ffffff;
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: inset 0 2px 8px rgba(0,0,0,0.02), 0 0 0 1px #e2e8f0;
+      position: relative;
+    }
+
+    body.dark .canvas-wrap {
+      background: #050514;
+      box-shadow: inset 0 0 40px #00000060, 0 0 0 1px #3a3a6a;
+    }
+
+    canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    /* Адаптив */
+    @media (max-width: 850px) {
+      .app {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto 1fr;
+      }
+      .sidebar { max-height: 380px; overflow-y: auto; }
+    }
+  </style>
+</head>
+<body>
+<div class="app">
+  <!-- Боковая панель -->
+  <aside class="sidebar">
+    <div class="brand">
+      <span>⚛️ Визуализатор физики</span>
+    </div>
+    <div class="modules">
+      <button class="module-btn active" data-module="motion">📦 Механическое движение</button>
+      <button class="module-btn" data-module="oscillation">🌊 Колебания</button>
+      <button class="module-btn" data-module="optics">🔆 Оптика (преломление)</button>
+    </div>
+
+    <div class="controls" id="controlsContainer">
+      <!-- динамическое содержимое -->
+    </div>
+
+    <div class="formula-panel" id="formulaBox">
+      x = x₀ + v·t
+    </div>
+  </aside>
+
+  <!-- Основная панель -->
+  <main class="main">
+    <div class="toolbar">
+      <button class="primary" id="startBtn">▶ Старт</button>
+      <button id="stopBtn">⏹ Стоп</button>
+      <button id="resetBtn">↺ Сброс</button>
+      <button id="saveBtn">💾 Сохранить</button>
+      <button id="uploadBtn">🖼 Загрузить объект</button>
+      <input type="file" id="uploadInput" accept="image/*" hidden>
+      <div class="fps-badge">FPS: <span id="fpsDisplay">0</span></div>
+      <button class="theme-toggle" id="themeToggle" title="Переключить тему">🌙</button>
+    </div>
+
+    <div class="canvas-wrap">
+      <canvas id="simCanvas"></canvas>
+    </div>
+  </main>
+</div>
+
+<script>
+  (function(){
+    "use strict";
+
+    // ---------- Холст и настройки ----------
+    const canvas = document.getElementById('simCanvas');
+    const ctx = canvas.getContext('2d');
+    let dpr = Math.max(1, window.devicePixelRatio || 1);
+    
+    // Масштаб: 1 метр = SCALE пикселей
+    const SCALE = 80; 
+
+    // ---------- Глобальное состояние ----------
+    const state = {
+      module: 'motion',
+      running: false,
+      lastTimestamp: 0,
+      time: 0,
+      
+      motion: {
+        x: 1.0,
+        v: 2.5,
+        trail: []
+      },
+      
+      oscill: {
+        A: 1.0,
+        omega: 2.0,
+        phi: 0.0
+      },
+      
+      optics: {
+        angleDeg: 30,
+        n1: 1.0,
+        n2: 1.5
+      },
+      
+      customImage: null,
+      fps: 0
+    };
+
+    // ---------- Тема ----------
+    const themeToggle = document.getElementById('themeToggle');
+    function setTheme(isDark) {
+      if (isDark) {
+        document.body.classList.add('dark');
+        themeToggle.textContent = '☀️';
+      } else {
+        document.body.classList.remove('dark');
+        themeToggle.textContent = '🌙';
+      }
+      // Перерисовка с новыми цветами фона canvas
+      drawStatic();
+    }
+    // Определяем предпочтение системы
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    setTheme(prefersDark);
+    
+    themeToggle.addEventListener('click', () => {
+      setTheme(!document.body.classList.contains('dark'));
+    });
+
+    // ---------- Вспомогательные функции ----------
+    function resizeCanvas() {
+      const rect = canvas.getBoundingClientRect();
+      canvas.width = rect.width * dpr;
+      canvas.height = rect.height * dpr;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+    window.addEventListener('resize', resizeCanvas);
+    
+    function clearCanvas() {
+      const w = canvas.width / dpr;
+      const h = canvas.height / dpr;
+      ctx.clearRect(0, 0, w, h);
+      // Фон в зависимости от темы
+      ctx.fillStyle = document.body.classList.contains('dark') ? '#0b0b1e' : '#f8fafc';
+      ctx.fillRect(0, 0, w, h);
+    }
+
+    // ---------- Построение панели управления ----------
+    const controlsDiv = document.getElementById('controlsContainer');
+    const formulaBox = document.getElementById('formulaBox');
+    
+    function buildControls() {
+      controlsDiv.innerHTML = '';
+      const card = document.createElement('div');
+      card.className = 'control-card';
+      
+      if (state.module === 'motion') {
+        card.appendChild(createSlider('Скорость v (м/с)', 0.5, 8.0, 0.1, state.motion.v, val => state.motion.v = val));
+        formulaBox.textContent = `x = x₀ + v·t   |   t = ${state.time.toFixed(2)} с   v = ${state.motion.v.toFixed(2)} м/с`;
+      }
+      
+      if (state.module === 'oscillation') {
+        card.appendChild(createSlider('Амплитуда A (м)', 0.2, 2.5, 0.1, state.oscill.A, val => state.oscill.A = val));
+        card.appendChild(createSlider('Частота ω (рад/с)', 0.5, 8.0, 0.1, state.oscill.omega, val => state.oscill.omega = val));
+        card.appendChild(createSlider('Фаза φ (рад)', 0, 6.28, 0.05, state.oscill.phi, val => state.oscill.phi = val));
+        formulaBox.textContent = `y = A·sin(ωt + φ)   A=${state.oscill.A.toFixed(2)} м, ω=${state.oscill.omega.toFixed(2)} рад/с`;
+      }
+      
+      if (state.module === 'optics') {
+        card.appendChild(createSlider('Угол падения θ₁ (°)', 0, 85, 1, state.optics.angleDeg, val => state.optics.angleDeg = val));
+        card.appendChild(createSlider('n₁ (верхняя среда)', 1.0, 2.5, 0.05, state.optics.n1, val => state.optics.n1 = val));
+        card.appendChild(createSlider('n₂ (нижняя среда)', 1.0, 3.0, 0.05, state.optics.n2, val => state.optics.n2 = val));
+        updateOpticsFormula();
+      }
+      
+      controlsDiv.appendChild(card);
+    }
+
+    function createSlider(label, min, max, step, value, onChange) {
+      const row = document.createElement('div');
+      row.className = 'control-row';
+      
+      const labelDiv = document.createElement('div');
+      labelDiv.className = 'control-label';
+      labelDiv.innerHTML = `<span>${label}</span><span class="value-badge" id="val_${label.replace(/\s/g,'')}">${value.toFixed(step < 0.1 ? 2 : 1)}</span>`;
+      
+      const flexDiv = document.createElement('div');
+      flexDiv.className = 'control-flex';
+      
+      const input = document.createElement('input');
+      input.type = 'range';
+      input.min = min;
+      input.max = max;
+      input.step = step;
+      input.value = value;
+      
+      const badge = labelDiv.querySelector('.value-badge');
+      input.addEventListener('input', () => {
+        const v = parseFloat(input.value);
+        badge.textContent = v.toFixed(step < 0.1 ? 2 : (step < 1 ? 1 : 0));
+        onChange(v);
+        updateFormulaDisplay();
+      });
+      
+      flexDiv.appendChild(input);
+      row.appendChild(labelDiv);
+      row.appendChild(flexDiv);
+      return row;
+    }
+
+    function updateFormulaDisplay() {
+      if (state.module === 'motion') {
+        formulaBox.textContent = `x = x₀ + v·t   |   t = ${state.time.toFixed(2)} с   v = ${state.motion.v.toFixed(2)} м/с`;
+      } else if (state.module === 'oscillation') {
+        formulaBox.textContent = `y = A·sin(ωt + φ)   A=${state.oscill.A.toFixed(2)} м, ω=${state.oscill.omega.toFixed(2)} рад/с`;
+      } else {
+        updateOpticsFormula();
+      }
+    }
+
+    function updateOpticsFormula() {
+      const n1 = state.optics.n1, n2 = state.optics.n2;
+      const angleRad = state.optics.angleDeg * Math.PI / 180;
+      const sin1 = Math.sin(angleRad);
+      const sin2 = n1 * sin1 / n2;
+      const totalInternal = Math.abs(sin2) > 1;
+      const theta2 = totalInternal ? NaN : Math.asin(sin2) * 180 / Math.PI;
+      formulaBox.innerHTML = totalInternal 
+        ? `⚠️ Полное внутреннее отражение (sinθ₂ = ${sin2.toFixed(3)})`
+        : `n₁·sinθ₁ = n₂·sinθ₂ → θ₂ = ${theta2.toFixed(1)}°`;
+    }
+
+    function resetModuleState() {
+      state.time = 0;
+      if (state.module === 'motion') {
+        state.motion.x = 1.0;
+        state.motion.v = 2.5;
+        state.motion.trail = [];
+      } else if (state.module === 'oscillation') {
+        state.oscill.A = 1.0;
+        state.oscill.omega = 2.0;
+        state.oscill.phi = 0.0;
+      } else if (state.module === 'optics') {
+        state.optics.angleDeg = 30;
+        state.optics.n1 = 1.0;
+        state.optics.n2 = 1.5;
+      }
+      buildControls();
+      drawStatic();
+    }
+
+    function drawStatic() {
+      clearCanvas();
+      if (state.module === 'motion') drawMotion(0);
+      else if (state.module === 'oscillation') drawOscillation(0);
+      else if (state.module === 'optics') drawOptics();
+    }
+
+    // ---------- Механика ----------
+    function drawMotion(dtSec) {
+      const w = canvas.width / dpr;
+      const h = canvas.height / dpr;
+      const isDark = document.body.classList.contains('dark');
+      
+      if (dtSec > 0) {
+        state.time += dtSec;
+        state.motion.x += state.motion.v * dtSec;
+      }
+      
+      const maxX = (w / SCALE) - 0.8;
+      const minX = 0.8;
+      if (state.motion.x > maxX) state.motion.x = minX;
+      if (state.motion.x < minX) state.motion.x = maxX;
+      
+      const px = state.motion.x * SCALE;
+      const groundY = h * 0.8;
+      
+      ctx.fillStyle = isDark ? '#1e2a4a' : '#cbd5e1';
+      ctx.fillRect(0, groundY - 5, w, 8);
+      
+      state.motion.trail.push(px);
+      if (state.motion.trail.length > 150) state.motion.trail.shift();
+      ctx.beginPath();
+      ctx.strokeStyle = isDark ? '#6b93d4' : '#2563eb';
+      ctx.lineWidth = 2.5;
+      state.motion.trail.forEach((x, i) => {
+        if (i === 0) ctx.moveTo(x, groundY - 25);
+        else ctx.lineTo(x, groundY - 25);
+      });
+      ctx.stroke();
+      
+      const objY = groundY - 30;
+      if (state.customImage) {
+        ctx.drawImage(state.customImage, px - 25, objY - 25, 50, 50);
+      } else {
+        ctx.beginPath();
+        ctx.arc(px, objY, 24, 0, 2 * Math.PI);
+        ctx.fillStyle = '#3b82f6';
+        ctx.shadowColor = '#3b82f6';
+        ctx.shadowBlur = 20;
+        ctx.fill();
+        ctx.shadowBlur = 0;
+      }
+      
+      ctx.fillStyle = isDark ? '#ddd9ff' : '#1e293b';
+      ctx.font = '14px "Segoe UI", monospace';
+      ctx.fillText(`x = ${state.motion.x.toFixed(2)} м`, 20, 35);
+      ctx.fillText(`v = ${state.motion.v.toFixed(2)} м/с`, 20, 58);
+    }
+
+    function drawOscillation(dtSec) {
+      const w = canvas.width / dpr;
+      const h = canvas.height / dpr;
+      const isDark = document.body.classList.contains('dark');
+      
+      if (dtSec > 0) state.time += dtSec;
+      
+      const centerY = h / 2;
+      const offset = state.oscill.A * SCALE * Math.sin(state.oscill.omega * state.time + state.oscill.phi);
+      const objY = centerY - offset;
+      
+      ctx.strokeStyle = isDark ? '#3e4a6b' : '#94a3b8';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(40, centerY);
+      ctx.lineTo(w - 40, centerY);
+      ctx.stroke();
+      
+      ctx.beginPath();
+      ctx.strokeStyle = isDark ? '#9aa8c9' : '#64748b';
+      ctx.lineWidth = 2.2;
+      for (let x = 30; x < w - 30; x += 8) {
+        const tNorm = (x - 30) / (w - 60);
+        const waveY = centerY - state.oscill.A * SCALE * 0.6 * Math.sin(state.oscill.omega * state.time * 1.5 + tNorm * 12);
+        if (x === 30) ctx.moveTo(x, waveY);
+        else ctx.lineTo(x, waveY);
+      }
+      ctx.stroke();
+      
+      const objX = w / 2;
+      if (state.customImage) {
+        ctx.drawImage(state.customImage, objX - 30, objY - 30, 60, 60);
+      } else {
+        ctx.fillStyle = '#f97316';
+        ctx.shadowColor = '#f97316';
+        ctx.shadowBlur = 20;
+        ctx.beginPath();
+        ctx.rect(objX - 25, objY - 25, 50, 50);
+        ctx.fill();
+        ctx.shadowBlur = 0;
+      }
+      
+      ctx.fillStyle = isDark ? '#ddd9ff' : '#1e293b';
+      ctx.font = '14px "Segoe UI"';
+      ctx.fillText(`y = ${(-offset/SCALE).toFixed(2)} м`, 20, 35);
+    }
+
+    function drawOptics() {
+      const w = canvas.width / dpr;
+      const h = canvas.height / dpr;
+      const isDark = document.body.classList.contains('dark');
+      
+      ctx.fillStyle = isDark ? '#0f1a2b' : '#ffffff';
+      ctx.fillRect(0, 0, w, h);
+      
+      const midY = h / 2;
+      const centerX = w * 0.6;
+      
+      ctx.strokeStyle = isDark ? '#7f8c9f' : '#334155';
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.moveTo(0, midY);
+      ctx.lineTo(w, midY);
+      ctx.stroke();
+      
+      ctx.strokeStyle = isDark ? '#6b7b9c' : '#64748b';
+      ctx.setLineDash([8, 8]);
+      ctx.beginPath();
+      ctx.moveTo(centerX, midY - 150);
+      ctx.lineTo(centerX, midY + 150);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      
+      const angleRad = state.optics.angleDeg * Math.PI / 180;
+      const n1 = state.optics.n1, n2 = state.optics.n2;
+      const sin1 = Math.sin(angleRad);
+      const sin2 = n1 * sin1 / n2;
+      const totalInternal = Math.abs(sin2) > 1;
+      
+      const startX = centerX - 180;
+      const startY = midY - 180 * Math.tan(angleRad);
+      ctx.beginPath();
+      ctx.moveTo(startX, startY);
+      ctx.lineTo(centerX, midY);
+      ctx.strokeStyle = '#60a5fa';
+      ctx.lineWidth = 3.5;
+      ctx.stroke();
+      
+      ctx.beginPath();
+      ctx.moveTo(centerX, midY);
+      if (!totalInternal) {
+        const theta2 = Math.asin(sin2);
+        const endX = centerX + 180;
+        const endY = midY + 180 * Math.tan(theta2);
+        ctx.lineTo(endX, endY);
+        ctx.strokeStyle = '#fb7185';
+      } else {
+        const endX = centerX - 180;
+        const endY = midY - 180 * Math.tan(angleRad);
+        ctx.lineTo(endX, endY);
+        ctx.strokeStyle = '#fbbf24';
+      }
+      ctx.lineWidth = 3.5;
+      ctx.stroke();
+      
+      ctx.fillStyle = isDark ? '#e0e7ff' : '#0f172a';
+      ctx.font = '15px "Segoe UI"';
+      ctx.fillText(`θ₁ = ${state.optics.angleDeg}°`, 20, 35);
+      ctx.fillText(`n₁ = ${n1.toFixed(2)}  n₂ = ${n2.toFixed(2)}`, 20, 60);
+    }
+
+    // ---------- Анимация ----------
+    function animationFrame(now) {
+      if (!state.running) return;
+      
+      const dt = Math.min(0.05, (now - state.lastTimestamp) / 1000);
+      state.lastTimestamp = now;
+      
+      state.fps = 1.0 / dt;
+      document.getElementById('fpsDisplay').textContent = Math.round(state.fps);
+      
+      clearCanvas();
+      
+      if (state.module === 'motion') {
+        drawMotion(dt);
+      } else if (state.module === 'oscillation') {
+        drawOscillation(dt);
+      } else {
+        drawOptics();
+      }
+      
+      updateFormulaDisplay();
+      requestAnimationFrame(animationFrame);
+    }
+
+    function startSimulation() {
+      if (state.running) return;
+      state.running = true;
+      state.lastTimestamp = performance.now();
+      requestAnimationFrame(animationFrame);
+    }
+
+    function stopSimulation() {
+      state.running = false;
+    }
+
+    // ---------- Инициализация ----------
+    function init() {
+      resizeCanvas();
+      buildControls();
+      drawStatic();
+      
+      document.querySelectorAll('.module-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          document.querySelectorAll('.module-btn').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          state.module = btn.dataset.module;
+          stopSimulation();
+          resetModuleState();
+          drawStatic();
+        });
+      });
+      
+      document.getElementById('startBtn').addEventListener('click', startSimulation);
+      document.getElementById('stopBtn').addEventListener('click', stopSimulation);
+      document.getElementById('resetBtn').addEventListener('click', () => {
+        stopSimulation();
+        resetModuleState();
+        drawStatic();
+      });
+      
+      document.getElementById('saveBtn').addEventListener('click', () => {
+        const link = document.createElement('a');
+        link.download = 'physics_simulation.png';
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+      });
+      
+      const uploadInput = document.getElementById('uploadInput');
+      document.getElementById('uploadBtn').addEventListener('click', () => uploadInput.click());
+      uploadInput.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const img = new Image();
+        img.onload = () => {
+          state.customImage = img;
+          drawStatic();
+        };
+        img.src = URL.createObjectURL(file);
+      });
+    }
+
+    init();
+  })();
+</script>
+</body>
+</html>
